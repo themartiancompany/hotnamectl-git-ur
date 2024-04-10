@@ -1,0 +1,22 @@
+pkgbase = hotnamectl-git
+	pkgdesc = Cross-platform hostnamectl
+	pkgver = 0.0.0.0.0.0.0.1.1.1.1.1.r0.g090f7aedba5808cd849f5e58151a031162265f71
+	pkgrel = 1
+	url = https://github.com/themartiancompany/hotnamectl
+	arch = any
+	groups = hip
+	groups = hip-git
+	license = AGPL3
+	checkdepends = shellcheck
+	makedepends = make
+	makedepends = curl
+	makedepends = jq
+	depends = bash
+	provides = hotnamectl=0.0.0.0.0.0.0.1.1.1.1.1.r0.g090f7aedba5808cd849f5e58151a031162265f71
+	provides = hostnamectl
+	provides = hostname
+	conflicts = hotnamectl
+	source = hotnamectl.tar.gz::https://github.com/themartiancompany/hotnamectl/archive/refs/heads/master.tar.gz
+	sha256sums = SKIP
+
+pkgname = hotnamectl-git

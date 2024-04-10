@@ -1,49 +1,51 @@
 # SPDX-License-Identifier: AGPL-3.0
 #
-# Maintainer: Truocolo <truocolo@aol.com>
-# Maintainer: Pellegrino Prevete (tallero) <pellegrinoprevete@gmail.com>
+# Maintainer:  Truocolo <truocolo@aol.com>
+# Maintainer:  Pellegrino Prevete <pellegrinoprevete@gmail.com>
 
 _hostnamectl=false
-_hostname="false"
-_offline="false"
-_git="false"
-pkgname=media-tools
-pkgver=0.0.0.1.1.1
+_hostname=false
+_git=false
+_local=false
+_proj="hip"
+_pkgname=hotnamectl
+pkgname="${_pkgname}-git"
+pkgver="0.0.0.0.0.0.0.1.1.1.1.1".r0.g"090f7aedba5808cd849f5e58151a031162265f71"
 pkgrel=1
 _pkgdesc=(
-  "A collection of media manipulation scripts."
+  "Cross-platform hostnamectl"
 )
 pkgdesc="${_pkgdesc[*]}"
 arch=(
   any
 )
-_http="https://github.com"
-_ns="themartiancompany"
-url="${_http}/${_ns}/${pkgname}"
+_gl="gitlab.com"
+_gh="github.com"
+_host="https://${_gh}"
+_ns='themartiancompany'
+_local="${HOME}/${_pkgname}"
+url="${_host}/${_ns}/${_pkgname}"
+_gh_api="https://api.${_gh}/repos/${_ns}/${_pkgname}"
 license=(
   AGPL3
 )
 depends=(
-  "ffmpeg"
+  bash
 )
-_os="$( \
-  uname \
-    -o)"
-optdepends=(
-)
-[[ "${_os}" != "GNU/Linux" ]] && \
-[[ "${_os}" == "Android" ]] && \
-  optdepends+=(
-  )
-makedepends=()
 [[ "${_hostnamectl}" == "true" ]] && \
   depends+=(
     "hostnamectl"
   )
-_os="$( \
-  uname \
-    -o)"
+makedepends=(
+  make
+)
+checkdepends=(
+  shellcheck
+)
+optdepends=(
+)
 provides=(
+  "${_pkgname}=${pkgver}"
 )
 [[ "${_hostnamectl}" == "false" ]] && \
   provides+=(
@@ -53,43 +55,139 @@ provides=(
   provides+=(
     "hostname"
   )
-checkdepends=(
-  "shellcheck"
+conflicts=(
+  "${_pkgname}"
 )
-source=()
-sha256sums=()
+groups=(
+ "${_proj}"
+ "${_proj}-git"
+)
 _url="${url}"
-[[ "${_offline}" == "true" ]] && \
-  url="file://${HOME}/${_pkgname}"
+[[ "${_local}" == true ]] && \
+  _url="${_local}"
+source=()
+_branch="master"
 [[ "${_git}" == true ]] && \
   makedepends+=(
-    "git"
+    git
   ) && \
   source+=(
-    "${pkgname}-${pkgver}::git+${_url}#tag=${pkgver}"
-  ) && \
-  sha256sums+=(
-    SKIP
+    "${_pkgname}-${_branch}::git+${_url}#branch=${_branch}"
   )
 [[ "${_git}" == false ]] && \
-  source+=(
-    "${pkgname}-${pkgver}.tar.gz::${_url}/archive/refs/tags/${pkgver}.tar.gz"
+  makedepends+=(
+    curl
+    jq
   ) && \
-  sha256sums+=(
-    '0b69f3e620beb0925eabff7739593285fbe1e4527d98467464154031cae66ab6'
+  source+=(
+    "${_pkgname}.tar.gz::${_url}/archive/refs/heads/${_branch}.tar.gz"
   )
+sha256sums=(
+  SKIP
+)
 
-check() {
+_nth() {
+  local \
+    _str="${1}" \
+    _n="${2}"
+  echo \
+    "${_str}" | \
+    awk \
+      -F '+' \
+      '{print $'"${_n}"'}'
+}
+
+_jq_pkgver() {
+  local \
+    _version \
+    _rev \
+    _commit
+  _version="$( \
+    curl \
+      --silent \
+      "${_gh_api}/tags" | \
+      jq \
+        '.[0].name')"
+  _version_commit="$( \
+    curl \
+      --silent \
+      "${_gh_api}/tags" | \
+      jq \
+        '.[0].commit.sha')"
+  _rev="$( \
+    curl \
+      --silent \
+      "${_gh_api}/commits" | \
+      jq \
+        'map(.sha == '${_version_commit}' ) | index(true)')"
+  _commit="$( \
+    curl \
+      --silent \
+      "${_gh_api}/commits" | \
+      jq \
+        '.[0].sha')"
+  printf \
+    "%s.r%s.g%s" \
+    "${_version}" \
+    "${_rev}" \
+    "${_commit}"
+}
+
+_parse_ver() {
+  local \
+    _pkgver="${1}" \
+    _out="" \
+    _ver \
+    _rev \
+    _commit
+  _ver="$( \
+    _nth \
+      "${_pkgver}" \
+      "1")"
+  _rev="$( \
+    _nth \
+      "${_pkgver}" \
+      "2")"
+  _commit="$( \
+    _nth \
+      "${_pkgver}" \
+      "3")"
+  _out=${_ver}
+  [[ "${_rev}" != "" ]] && \
+    _out+=".r${_rev}"
+  [[ "${_commit}" != "" ]] && \
+    _out+=".${_commit}"
+  echo \
+    "${_out}"
+}
+
+_git_pkgver() {
+  local \
+    _pkgver
+  _pkgver="$( \
+    git \
+      describe \
+      --tags \
+      --long | \
+      sed \
+        's/-/+/g')"
+  _parse_ver \
+    "${_pkgver}"
+}
+
+pkgver() {
   cd \
-    "${pkgname}-${pkgver}"
-  make \
-    -k \
-    check
+    "${_pkgname}-${_branch}"
+  if [[ "${_git}" == true ]]; then
+    _git_pkgver
+  elif [[ "${_git}" == false ]]; then
+    _jq_pkgver
+  fi
 }
 
 package() {
   cd \
-    "${pkgname}-${pkgver}"
+    "${_pkgname}-${_branch}"
   make \
     PREFIX="/usr" \
     DESTDIR="${pkgdir}" \
@@ -102,7 +200,7 @@ package() {
     ln \
       -s \
       "hotnamectl" \
-      "${pkgdir}/usr/bin/hostnamect/"
+      "${pkgdir}/usr/bin/hostnamectl"
   fi
   if [[ "${_hostname}" == "false" ]]; then
     ln \
